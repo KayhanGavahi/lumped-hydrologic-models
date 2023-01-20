@@ -22,8 +22,8 @@ Pet = 4.49389442835338
 
 
 s = time.time()
-for i in range(10000):
-    [xx1,xx2,xx3,xx4,xx5,qt] = hymod(xx1, xx2, xx3, xx4, xx5, Pars, I, Pet)
+
+[xx1,xx2,xx3,xx4,xx5,qt] = hymod(xx1, xx2, xx3, xx4, xx5, Pars, I, Pet)
     
 print(time.time()-s)    
     
