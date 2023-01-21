@@ -62,3 +62,5 @@ s = time.time()
 
 states, flux = sacrun(par, states, Rain, PET, nens)
 print(time.time()-s)  
+
+#test
