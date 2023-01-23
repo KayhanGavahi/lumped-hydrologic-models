@@ -61,12 +61,9 @@ PET = np.array(PET).reshape(len(PET), 1)
 
 s = time.time()
 
-<<<<<<< HEAD
+
 states, flux = models.sacrun(par, states, Rain, PET, nens)
 print(time.time()-s)  
-=======
-states, flux = sacrun(par, states, Rain, PET, nens)
-print(time.time()-s)  
 
-#test
->>>>>>> 1aefae5b85309a871abdf8538119165ae06af43f
+
+
