@@ -6,10 +6,11 @@ Created on Tue Nov 22 18:12:44 2022
 """
 
 
-from models.hymod import *
-from models.sacrun import *
+#from models.hymod import *
+#from models.sacrun import *
 import time
-
+import models
+import numpy as np
 
 xx1 = 29.5680077836428
 xx2 = 5.52012021719543
@@ -23,7 +24,7 @@ Pet = 4.49389442835338
 
 s = time.time()
 
-[xx1,xx2,xx3,xx4,xx5,qt] = hymod(xx1, xx2, xx3, xx4, xx5, Pars, I, Pet)
+#[xx1,xx2,xx3,xx4,xx5,qt] = hymod(xx1, xx2, xx3, xx4, xx5, Pars, I, Pet)
     
 print(time.time()-s)    
     
@@ -60,5 +61,5 @@ PET = np.array(PET).reshape(len(PET), 1)
 
 s = time.time()
 
-states, flux = sacrun(par, states, Rain, PET, nens)
+states, flux = models.sacrun(par, states, Rain, PET, nens)
 print(time.time()-s)  
