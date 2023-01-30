@@ -86,6 +86,10 @@ data['daily_rain'] = data['rain1'] + data['rain2'] + data['rain3'] + data['rain4
 data = data[['PET', 'daily_rain', 'flow']]
 #data = data[['flow']]
 
+if data.shape[1]==1:
+    mode = 'only flow'
+else:
+    mode = 'all three'
 
 n = len(data)
 train_df = data[0:int(n*0.7)]
@@ -184,7 +188,7 @@ print('test CORREL:', CORREL(y_pred, y_test))
 print('test KGE:', KGE(y_pred, y_test))'''
 
 
-
+print(mode)
 print('test MSE:', MSE(y_pred, y_test), 'baseline MSE:', MSE(y_pred_base, y_test))
 print('test CORREL:', CORREL(y_pred, y_test), 'baseline CORREL:', CORREL(y_pred_base, y_test))
 print('test KGE:', KGE(y_pred, y_test), 'baseline KGE:', KGE(y_pred_base, y_test))
