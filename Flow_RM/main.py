@@ -99,17 +99,23 @@ test_df = data[int(n*0.85):]
 
 
 
-test_df['flow'].plot(label='test')
+
 train_df['flow'].plot(label='train')
 val_df['flow'].plot(label='val')
+test_df['flow'].plot(label='test')
 ax = plt.gca()
 ax.set_ylabel('streamflow (cms)')
 ax.legend()
 
 
-aa
+#### See this for Harvey:
+#### https://www.weather.gov/crp/hurricane_harvey
 
-#test_df.plot()
+print('max flow at row number = ', data['flow'].argmax(axis=0))
+print(data.iloc[6085])
+
+
+
 
 train_mean = train_df.mean()
 train_std = train_df.std()
@@ -123,7 +129,7 @@ test_df = (test_df - train_mean) / train_std
 
 
 
-input_width = 365
+input_width = 200
 label_width = 1
 shift = 1 
 
@@ -142,7 +148,7 @@ tf.random.set_seed(7)
 
 
 
-MAX_EPOCHS = 500
+MAX_EPOCHS = 50
 
 def compile_and_fit(model, patience=2):
   early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
@@ -195,16 +201,27 @@ print('test CORREL:', CORREL(y_pred, y_test), 'baseline CORREL:', CORREL(y_pred_
 print('test KGE:', KGE(y_pred, y_test), 'baseline KGE:', KGE(y_pred_base, y_test))
 
 
-'''
+
+plt.figure()
 n_input = len(test_df) - (input_width + shift) + 1
-test_df[0+input_width+(shift-label_width):n_input+input_width+shift]['flow'].plot(marker = '*', markersize=4)
 
 y_pred_df = copy.deepcopy(test_df)
+
+test_df = test_df.rename(columns={"flow": "Obs"})
+test_df[0+input_width+(shift-label_width):n_input+input_width+shift]['Obs'].plot(marker = '*', markersize=4)
+
+
 y_pred_df.iloc[0+input_width+(shift-label_width):n_input+input_width+shift, -1] = y_pred
-y_pred_df[0+input_width+(shift-label_width):n_input+input_width+shift]['flow'].plot(marker = '.', markersize=4)'''
+
+y_pred_df = y_pred_df.rename(columns={"flow": "LSTM"})
+y_pred_df[0+input_width+(shift-label_width):n_input+input_width+shift]['LSTM'].plot(marker = '.', markersize=4)
 
 
+ax = plt.gca()
+ax.set_ylabel('streamflow (cms)')
+ax.legend()
 
+plt.savefig(f'MaxEpoch_{MAX_EPOCHS}.png')
 
 aa
 from scipy.stats import gaussian_kde
