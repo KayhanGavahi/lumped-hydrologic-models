@@ -86,6 +86,7 @@ data['daily_rain'] = data['rain1'] + data['rain2'] + data['rain3'] + data['rain4
 data = data[['PET', 'daily_rain', 'flow']]
 #data = data[['flow']]
 
+
 if data.shape[1]==1:
     mode = 'only flow'
 else:
@@ -97,16 +98,16 @@ val_df = data[int(n*0.7):int(n*0.85)]
 test_df = data[int(n*0.85):]
 
 
-'''
-test_df.plot(label='test')
-train_df.plot(label='train')
-val_df.plot(label='val')
+
+test_df['flow'].plot(label='test')
+train_df['flow'].plot(label='train')
+val_df['flow'].plot(label='val')
 ax = plt.gca()
 ax.set_ylabel('streamflow (cms)')
-ax.legend()'''
+ax.legend()
 
 
-
+aa
 
 #test_df.plot()
 
