@@ -29,11 +29,12 @@ def KGE(x,y):
 	return 1 - (t1+t2+t3)**0.5
 def make_dataset(df):
     n_train = len(df)
-    n_input = len(df) - (input_width + shift) + 1
+    n_input = n_train - (input_width + shift) + 1
     
     print('n_input', n_input)
     
     X = np.zeros([n_input, input_width, df.shape[1]])
+    #X = np.zeros([n_input, input_width, 2])
     y = np.zeros([n_input, label_width, 1])
     for i in range(n_input):
     
@@ -42,6 +43,7 @@ def make_dataset(df):
             print(np.arange(n_input)[i+input_width+(shift-label_width):i+input_width+shift])
     
         X[i, :, :] = df.iloc[i:i+input_width, :]
+        #X[i, :, :] = df.iloc[i:i+input_width, :2]
         
         
         
@@ -68,7 +70,8 @@ def make_dataset(df):
 
 
 
-data = pd.read_csv("08066500_chirps.txt", delimiter=',', header=0)
+#data = pd.read_csv("08066500_nldas.txt", delimiter=',', header=0)
+data = pd.read_csv("08066500.txt", delimiter=',', header=0)
 
 data['date'] = data['year'].astype(str) + \
     data['month'].astype(str).str.zfill(2) + \
@@ -86,6 +89,7 @@ data['daily_rain'] = data['rain1'] + data['rain2'] + data['rain3'] + data['rain4
 data = data[['PET', 'daily_rain', 'flow']]
 #data = data[['flow']]
 
+data.to_csv('08066500_nldas.csv')
 
 if data.shape[1]==1:
     mode = 'only flow'
@@ -93,9 +97,9 @@ else:
     mode = 'all three'
 
 n = len(data)
-train_df = data[0:int(n*0.7)]
-val_df = data[int(n*0.7):int(n*0.85)]
-test_df = data[int(n*0.85):]
+train_df = data[0:int(n*0.6)]
+val_df = data[int(n*0.6):int(n*0.8)]
+test_df = data[int(n*0.8):]
 
 
 
@@ -129,21 +133,29 @@ test_df = (test_df - train_mean) / train_std
 
 
 
-input_width = 200
+input_width = 20
 label_width = 1
-shift = 1 
+shift = 1
 
 
 X_train, y_train = make_dataset(train_df)
-
-
 X_val, y_val = make_dataset(val_df)
 X_test, y_test = make_dataset(test_df)
 
 
 X_train, y_train = shuffle(X_train, y_train, random_state=1)
 
+
+
+from sklearn.ensemble import RandomForestRegressor
+regr = RandomForestRegressor(max_depth=100, random_state=0)
+regr.fit(X_train.reshape(X_train.shape[0], input_width*X_train.shape[-1]), 
+         y_train.reshape(y_train.shape[0], 1).ravel())
+
 tf.random.set_seed(7)
+
+
+
 
 
 
@@ -181,24 +193,30 @@ history = compile_and_fit(lstm_model)
 
 
 y_pred =  lstm_model.predict(X_test)
-
-y_pred_base =  X_test[:, -1, -1]
-
-
-y_pred = y_pred.ravel()
-y_test = y_test.ravel()
+y_pred_rf = regr.predict(X_test.reshape(X_test.shape[0],
+                                        input_width*X_test.shape[-1]))* train_std['flow'] + train_mean['flow']
 
 
-'''
-print('test MSE:', MSE(y_pred, y_test))
-print('test CORREL:', CORREL(y_pred, y_test))
-print('test KGE:', KGE(y_pred, y_test))'''
+y_pred_base =  X_test[:, -1, -1] * train_std['flow'] + train_mean['flow']
+
+
+y_pred = y_pred.ravel() * train_std['flow'] + train_mean['flow']
+y_test = y_test.ravel() * train_std['flow'] + train_mean['flow']
+
+
 
 
 print(mode)
-print('test MSE:', MSE(y_pred, y_test), 'baseline MSE:', MSE(y_pred_base, y_test))
-print('test CORREL:', CORREL(y_pred, y_test), 'baseline CORREL:', CORREL(y_pred_base, y_test))
-print('test KGE:', KGE(y_pred, y_test), 'baseline KGE:', KGE(y_pred_base, y_test))
+print('test MSE RF:', MSE(y_pred_rf, y_test), 'baseline MSE:', MSE(y_pred_base, y_test))
+print('test CORREL RF:', CORREL(y_pred_rf, y_test), 'baseline CORREL:', CORREL(y_pred_base, y_test))
+print('test KGE RF:', KGE(y_pred_rf, y_test), 'baseline KGE:', KGE(y_pred_base, y_test))
+
+
+print(mode)
+print('test MSE LSTM:', MSE(y_pred, y_test), 'baseline MSE:', MSE(y_pred_base, y_test))
+print('test CORREL LSTM:', CORREL(y_pred, y_test), 'baseline CORREL:', CORREL(y_pred_base, y_test))
+print('test KGE LSTM:', KGE(y_pred, y_test), 'baseline KGE:', KGE(y_pred_base, y_test))
+
 
 
 
@@ -208,7 +226,11 @@ n_input = len(test_df) - (input_width + shift) + 1
 y_pred_df = copy.deepcopy(test_df)
 
 test_df = test_df.rename(columns={"flow": "Obs"})
+test_df['Obs'] = test_df['Obs'] * train_std['flow'] + train_mean['flow']
+
 test_df[0+input_width+(shift-label_width):n_input+input_width+shift]['Obs'].plot(marker = '*', markersize=4)
+
+
 
 
 y_pred_df.iloc[0+input_width+(shift-label_width):n_input+input_width+shift, -1] = y_pred
@@ -222,6 +244,35 @@ ax.set_ylabel('streamflow (cms)')
 ax.legend()
 
 plt.savefig(f'MaxEpoch_{MAX_EPOCHS}.png')
+
+
+
+test_df['LSTM'] = y_pred_df['LSTM'] 
+
+
+
+product = np.zeros([1388, 102])
+
+
+
+product[:, 0] = np.array(test_df['Obs'])
+
+for i in range(1388):
+
+    #product[i, 2:] = np.random.randn(100) * np.array(test_df['LSTM'])[i] * .05 + np.array(test_df['LSTM'])[i]
+    
+    
+    product[i, 1] = np.mean(product[i, 2:103])
+    
+product[input_width:, 1] = y_pred_base
+
+for j in range(100):
+    
+    product[input_width:, j+2] = y_pred_base
+    
+
+
+Product = np.genfromtxt('08075770.txt', delimiter=',')
 
 aa
 from scipy.stats import gaussian_kde

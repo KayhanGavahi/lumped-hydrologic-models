@@ -1,0 +1,364 @@
+%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%% PLOT %%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%
+%clc
+clear
+close all;
+
+%load('Results_Harvey_OL/08066500_nldas.mat');
+%type = 'OL'
+
+load('08066500.mat');
+type = 'DA'
+Product = product_peyman;
+Product = product_lstm;
+
+%Product = Product(230:254, :)
+
+%idx = Product(:, 1) > 1000;
+
+%Product = Product(idx, :);
+
+
+if type=='OL'
+Qdist = Product(:, 2:101);
+EV = mean(Qdist')';
+Qo = Product(:, 1);
+else
+Qdist = Product(:, 3:102);
+EV = Product(:, 2);
+Qo = Product(:, 1);
+end
+
+
+T = size(EV,1); N =size(Qdist,2);
+
+%1. Plot the plots with 95% CI
+Low = zeros(T, 1); Up = zeros(T, 1);
+
+for i = 1:T
+    Low(i,1) = quantile(Qdist(i,:),0.025);
+    Up(i,1) = quantile(Qdist(i,:),0.975);
+end
+
+X = 1:T;
+X = X';
+
+A = [X, Low(:,1)]; B = [X, Up(:,1)]; 
+C = [A; flipud(B)];
+d = fill(C(:,1), C(:,2), [173	216	230]/255 );
+set(d,'EdgeColor','None');   %remove the border
+hold on;
+plot(EV,'.-r'); hold on;
+plot(Qo,'.','color','black');
+ylabel('Streamflow (m3/s)','FontSize',15,'FontWeight','bold');
+legend('95% Uncertainty Interval', 'Mean Ensemble','Observation');
+NSE = 1 -  sum((EV - Qo).^2)/(var(Qo)*T)
+title(strcat('NSE = ', num2str(NSE), '   KGE = ', num2str(KGE(EV,Qo)), '   RMSE = ', num2str(mean((EV - Qo).^2)^.5)))
+ylim([0, 5000])
+
+
+%2. Calculate the metrics
+
+%(1) NSE
+NSE = 1 -  sum((EV - Qo).^2)/(var(Qo)*T)
+
+%(2) Reliability and QQ-plot
+
+T = size(EV,1); N =size(Qdist,2);
+
+Rank = zeros(T,1);
+for i=1:T
+    index = 0;
+    for j =1:N
+        if(Qo(i)>Qdist(i,j))
+            index=index+1;
+        end
+    end
+        Rank(i)=index;
+end
+
+Rank = Rank/N;
+Rank = sort(Rank);
+
+U = zeros(T,1);
+for i=1:T
+    U(i) = i/T;
+end
+
+R = 1 - 2 *sum(abs(Rank-U))/T
+figure()
+plot(Rank,U,'r'); hold on;
+plot(U,U);
+
+%(3) ER95
+index = 0;
+for i =1:T
+    if ( Qo(i)<quantile(Qdist(i,:),0.025) || Qo(i)>quantile(Qdist(i,:),0.975) )
+        index = index + 1;
+    end
+end
+ER95 = (index / T)*100
+MAB = ab(Qo,EV)
+KGE=KGE(EV,Qo)
+
+% % % %3. Looking at the parameters evolution
+% % % figure()
+% % % subplot(5,1,1)
+% % % Params = PARAM;
+% % % Qr(:,:) = Params(1,:,:);
+% % % Qr = Qr';
+% % % X = zeros(size(Qr,1),1);
+% % % Sim = zeros(size(Qr,1),3);
+% % % Sim1 = zeros(size(Qr,1),2);
+% % % Sim2 = zeros(size(Qr,1),2);
+% % % Sim3 = zeros(size(Qr,1),2);
+% % % for i=1:size(Qr,1)
+% % %     Sim(i,1) = quantile(Qr(i,:),0.025);
+% % %     Sim(i,2) = mean(Qr(i,:));
+% % %     Sim(i,3) = quantile(Qr(i,:),0.975);
+% % %     X(i) = i-1;
+% % %     
+% % %     Sim1(i,1) = quantile(Qr(i,:),0.05);
+% % %     Sim1(i,3) = quantile(Qr(i,:),0.95);
+% % %     
+% % %     Sim2(i,1) = quantile(Qr(i,:),0.16);
+% % %     Sim2(i,3) = quantile(Qr(i,:),0.84);
+% % %     
+% % %     Sim3(i,1) = quantile(Qr(i,:),0.45);
+% % %     Sim3(i,3) = quantile(Qr(i,:),0.55);
+% % % end
+% % % 
+% % % A = [X, Sim(:,1)]; B = [X, Sim(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [173	216	230]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim1(:,1)]; B = [X, Sim1(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [255	228	196]/255 );  
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim2(:,1)]; B = [X, Sim2(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [222	184	135]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim3(:,1)]; B = [X, Sim3(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [255	248	220]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % plot(X,Sim(:,2), 'Color',[0,0,0])
+% % % set(gca,'FontSize',15)
+% % % xlim([0 size(Qr,1)]);
+% % % text(size(Qr,1),75,'X','FontSize',18);
+% % % title('alpha','FontSize',18);
+% % % clear Qr;
+% % % 
+% % % %%%%%%%%%%%%%%%%%%
+% % % subplot(5,1,2)
+% % % 
+% % % Qr(:,:) = Params(2,:,:);
+% % % Qr = Qr';
+% % % X = zeros(size(Qr,1),1);
+% % % Sim = zeros(size(Qr,1),3);
+% % % Sim1 = zeros(size(Qr,1),2);
+% % % Sim2 = zeros(size(Qr,1),2);
+% % % Sim3 = zeros(size(Qr,1),2);
+% % % for i=1:size(Qr,1)
+% % %     Sim(i,1) = quantile(Qr(i,:),0.025);
+% % %     Sim(i,2) = mean(Qr(i,:));
+% % %     Sim(i,3) = quantile(Qr(i,:),0.975);
+% % %     X(i) = i-1;
+% % %     
+% % %     Sim1(i,1) = quantile(Qr(i,:),0.05);
+% % %     Sim1(i,3) = quantile(Qr(i,:),0.95);
+% % %     
+% % %     Sim2(i,1) = quantile(Qr(i,:),0.16);
+% % %     Sim2(i,3) = quantile(Qr(i,:),0.84);
+% % %     
+% % %     Sim3(i,1) = quantile(Qr(i,:),0.45);
+% % %     Sim3(i,3) = quantile(Qr(i,:),0.55);
+% % % end
+% % % 
+% % % A = [X, Sim(:,1)]; B = [X, Sim(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [173	216	230]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim1(:,1)]; B = [X, Sim1(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [255	228	196]/255 );  
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim2(:,1)]; B = [X, Sim2(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [222	184	135]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim3(:,1)]; B = [X, Sim3(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [255	248	220]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % plot(X,Sim(:,2), 'Color',[0,0,0])
+% % % set(gca,'FontSize',15)
+% % % xlim([0 size(Qr,1)]);
+% % % text(size(Qr,1),70,'X','FontSize',18);
+% % % title('bexp','FontSize',18);
+% % % clear Qr;
+% % % 
+% % % %%%%%%%%%%%%%%%
+% % % subplot(5,1,3)
+% % % 
+% % % Qr(:,:) = Params(3,:,:);
+% % % Qr = Qr';
+% % % X = zeros(size(Qr,1),1);
+% % % Sim = zeros(size(Qr,1),3);
+% % % Sim1 = zeros(size(Qr,1),2);
+% % % Sim2 = zeros(size(Qr,1),2);
+% % % Sim3 = zeros(size(Qr,1),2);
+% % % for i=1:size(Qr,1)
+% % %     Sim(i,1) = quantile(Qr(i,:),0.025);
+% % %     Sim(i,2) = mean(Qr(i,:));
+% % %     Sim(i,3) = quantile(Qr(i,:),0.975);
+% % %     X(i) = i-1;
+% % %     
+% % %     Sim1(i,1) = quantile(Qr(i,:),0.05);
+% % %     Sim1(i,3) = quantile(Qr(i,:),0.95);
+% % %     
+% % %     Sim2(i,1) = quantile(Qr(i,:),0.16);
+% % %     Sim2(i,3) = quantile(Qr(i,:),0.84);
+% % %     
+% % %     Sim3(i,1) = quantile(Qr(i,:),0.45);
+% % %     Sim3(i,3) = quantile(Qr(i,:),0.55);
+% % % end
+% % % 
+% % % A = [X, Sim(:,1)]; B = [X, Sim(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [173	216	230]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim1(:,1)]; B = [X, Sim1(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [255	228	196]/255 );  
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim2(:,1)]; B = [X, Sim2(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [222	184	135]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim3(:,1)]; B = [X, Sim3(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [255	248	220]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % plot(X,Sim(:,2), 'Color',[0,0,0])
+% % % set(gca,'FontSize',15)
+% % % xlim([0 size(Qr,1)]);
+% % % text(size(Qr,1),0.25,'X','FontSize',18);
+% % % title('Cmax','FontSize',18);
+% % % clear Qr;
+% % % 
+% % % %%%%%%%%%%%%%%%
+% % % subplot(5,1,4)
+% % % 
+% % % Qr(:,:) = Params(4,:,:);
+% % % Qr = Qr';
+% % % X = zeros(size(Qr,1),1);
+% % % Sim = zeros(size(Qr,1),3);
+% % % Sim1 = zeros(size(Qr,1),2);
+% % % Sim2 = zeros(size(Qr,1),2);
+% % % Sim3 = zeros(size(Qr,1),2);
+% % % for i=1:size(Qr,1)
+% % %     Sim(i,1) = quantile(Qr(i,:),0.025);
+% % %     Sim(i,2) = mean(Qr(i,:));
+% % %     Sim(i,3) = quantile(Qr(i,:),0.975);
+% % %     X(i) = i-1;
+% % %     
+% % %     Sim1(i,1) = quantile(Qr(i,:),0.05);
+% % %     Sim1(i,3) = quantile(Qr(i,:),0.95);
+% % %     
+% % %     Sim2(i,1) = quantile(Qr(i,:),0.16);
+% % %     Sim2(i,3) = quantile(Qr(i,:),0.84);
+% % %     
+% % %     Sim3(i,1) = quantile(Qr(i,:),0.45);
+% % %     Sim3(i,3) = quantile(Qr(i,:),0.55);
+% % % end
+% % % 
+% % % A = [X, Sim(:,1)]; B = [X, Sim(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [173	216	230]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim1(:,1)]; B = [X, Sim1(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [255	228	196]/255 );  
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim2(:,1)]; B = [X, Sim2(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [222	184	135]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim3(:,1)]; B = [X, Sim3(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [255	248	220]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % plot(X,Sim(:,2), 'Color',[0,0,0])
+% % % set(gca,'FontSize',15)
+% % % xlim([0 size(Qr,1)]);
+% % % text(size(Qr,1),0.035,'X','FontSize',18);
+% % % title('Rs','FontSize',18);
+% % % clear Qr;
+% % % 
+% % % %%%%%%%%%%%%%%%
+% % % subplot(5,1,5)
+% % % 
+% % % Qr(:,:) = Params(5,:,:);
+% % % Qr = Qr';
+% % % X = zeros(size(Qr,1),1);
+% % % Sim = zeros(size(Qr,1),3);
+% % % Sim1 = zeros(size(Qr,1),2);
+% % % Sim2 = zeros(size(Qr,1),2);
+% % % Sim3 = zeros(size(Qr,1),2);
+% % % for i=1:size(Qr,1)
+% % %     Sim(i,1) = quantile(Qr(i,:),0.025);
+% % %     Sim(i,2) = mean(Qr(i,:));
+% % %     Sim(i,3) = quantile(Qr(i,:),0.975);
+% % %     X(i) = i-1;
+% % %     
+% % %     Sim1(i,1) = quantile(Qr(i,:),0.05);
+% % %     Sim1(i,3) = quantile(Qr(i,:),0.95);
+% % %     
+% % %     Sim2(i,1) = quantile(Qr(i,:),0.16);
+% % %     Sim2(i,3) = quantile(Qr(i,:),0.84);
+% % %     
+% % %     Sim3(i,1) = quantile(Qr(i,:),0.45);
+% % %     Sim3(i,3) = quantile(Qr(i,:),0.55);
+% % % end
+% % % 
+% % % A = [X, Sim(:,1)]; B = [X, Sim(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [173	216	230]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim1(:,1)]; B = [X, Sim1(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [255	228	196]/255 );  
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim2(:,1)]; B = [X, Sim2(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [222	184	135]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % hold on;
+% % % A = [X, Sim3(:,1)]; B = [X, Sim3(:,3)]; 
+% % % C = [A; flipud(B)];
+% % % d = fill(C(:,1), C(:,2), [255	248	220]/255 );
+% % % set(d,'EdgeColor','None');   %remove the border 
+% % % plot(X,Sim(:,2), 'Color',[0,0,0])
+% % % set(gca,'FontSize',15)
+% % % xlim([0 size(Qr,1)]);
+% % % text(size(Qr,1),0.2,'X','FontSize',18);
+% % % title('Rq','FontSize',18);
+% % % clear Qr;
