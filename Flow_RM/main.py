@@ -71,7 +71,9 @@ def make_dataset(df):
 
 
 #data = pd.read_csv("08066500_nldas.txt", delimiter=',', header=0)
-data = pd.read_csv("08066500.txt", delimiter=',', header=0)
+#data = pd.read_csv("08066500.txt", delimiter=',', header=0)
+
+data = pd.read_csv("08066500_chirps.txt", delimiter=',', header=0)
 
 data['date'] = data['year'].astype(str) + \
     data['month'].astype(str).str.zfill(2) + \
@@ -89,7 +91,7 @@ data['daily_rain'] = data['rain1'] + data['rain2'] + data['rain3'] + data['rain4
 data = data[['PET', 'daily_rain', 'flow']]
 #data = data[['flow']]
 
-data.to_csv('08066500_nldas.csv')
+#data.to_csv('08066500_nldas.csv')
 
 if data.shape[1]==1:
     mode = 'only flow'
@@ -133,7 +135,7 @@ test_df = (test_df - train_mean) / train_std
 
 
 
-input_width = 20
+input_width = 50
 label_width = 1
 shift = 1
 
@@ -205,11 +207,11 @@ y_test = y_test.ravel() * train_std['flow'] + train_mean['flow']
 
 
 
-
+'''
 print(mode)
 print('test MSE RF:', MSE(y_pred_rf, y_test), 'baseline MSE:', MSE(y_pred_base, y_test))
 print('test CORREL RF:', CORREL(y_pred_rf, y_test), 'baseline CORREL:', CORREL(y_pred_base, y_test))
-print('test KGE RF:', KGE(y_pred_rf, y_test), 'baseline KGE:', KGE(y_pred_base, y_test))
+print('test KGE RF:', KGE(y_pred_rf, y_test), 'baseline KGE:', KGE(y_pred_base, y_test))'''
 
 
 print(mode)
@@ -246,7 +248,7 @@ ax.legend()
 plt.savefig(f'MaxEpoch_{MAX_EPOCHS}.png')
 
 
-
+'''
 test_df['LSTM'] = y_pred_df['LSTM'] 
 
 
@@ -296,7 +298,7 @@ plt.show()
 
 #plt.plot(y_test)
 #plt.plot(y_pred)
-#plt.plot(y_pred_base)
+#plt.plot(y_pred_base)'''
 
 
 
