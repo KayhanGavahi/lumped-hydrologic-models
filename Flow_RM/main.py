@@ -89,7 +89,7 @@ data['daily_rain'] = data['rain1'] + data['rain2'] + data['rain3'] + data['rain4
 
 
 data = data[['PET', 'daily_rain', 'flow']]
-#data = data[['flow']]
+data = data[['flow']] * 35.314666212661
 
 #data.to_csv('08066500_nldas.csv')
 
@@ -110,7 +110,7 @@ train_df['flow'].plot(label='train')
 val_df['flow'].plot(label='val')
 test_df['flow'].plot(label='test')
 ax = plt.gca()
-ax.set_ylabel('streamflow (cms)')
+ax.set_ylabel('streamflow (cfs)')
 ax.legend()
 
 
