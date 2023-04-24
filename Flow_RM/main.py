@@ -106,20 +106,19 @@ test_df = data[int(n*0.8):]
 
 
 
-train_df['flow'].plot(label='train')
-val_df['flow'].plot(label='val')
-test_df['flow'].plot(label='test')
+train_df['flow'].plot(label='train', c='#1f77b4')
+val_df['flow'].plot(label='val', c='g')
+test_df['flow'].plot(label='test', c='darkorange')
 ax = plt.gca()
 ax.set_ylabel('streamflow (cfs)')
 ax.legend()
 
-
+#plt.savefig('train_test_val.png', dpi=600)
 #### See this for Harvey:
 #### https://www.weather.gov/crp/hurricane_harvey
 
 print('max flow at row number = ', data['flow'].argmax(axis=0))
 print(data.iloc[6085])
-
 
 
 
@@ -137,7 +136,7 @@ test_df = (test_df - train_mean) / train_std
 
 input_width = 50
 label_width = 1
-shift = 1
+shift = 7
 
 
 X_train, y_train = make_dataset(train_df)
@@ -242,10 +241,12 @@ y_pred_df[0+input_width+(shift-label_width):n_input+input_width+shift]['LSTM'].p
 
 
 ax = plt.gca()
-ax.set_ylabel('streamflow (cms)')
+ax.set_ylabel('streamflow (cfs)')
 ax.legend()
 
-plt.savefig(f'MaxEpoch_{MAX_EPOCHS}.png')
+plt.savefig('7_day_ahead_bl.png', dpi=600, bbox_inches='tight')
+
+#.savefig(f'MaxEpoch_{MAX_EPOCHS}.png')
 
 
 '''
