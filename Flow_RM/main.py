@@ -13,6 +13,11 @@ from sklearn.utils import shuffle
 import copy
 def MSE(X,Y):
 	return np.mean((X-Y)**2)**.5
+def NSE(X,Y):
+	
+    return 1 - np.sum(np.abs(X-Y)) / np.sum(np.abs(Y - np.mean(Y)))
+    
+    
 def CORREL(X,Y):
 	X_bar = np.nanmean(X)
 	Y_bar = np.nanmean(Y)
@@ -33,8 +38,8 @@ def make_dataset(df):
     
     print('n_input', n_input)
     
-    X = np.zeros([n_input, input_width, df.shape[1]])
-    #X = np.zeros([n_input, input_width, 2])
+    #X = np.zeros([n_input, input_width, df.shape[1]])
+    X = np.zeros([n_input, input_width, 2])
     y = np.zeros([n_input, label_width, 1])
     for i in range(n_input):
     
@@ -42,8 +47,8 @@ def make_dataset(df):
             print(np.arange(n_input)[i:i+input_width])
             print(np.arange(n_input)[i+input_width+(shift-label_width):i+input_width+shift])
     
-        X[i, :, :] = df.iloc[i:i+input_width, :]
-        #X[i, :, :] = df.iloc[i:i+input_width, :2]
+        #X[i, :, :] = df.iloc[i:i+input_width, :]
+        X[i, :, :] = df.iloc[i:i+input_width, :2]
         
         
         
@@ -73,7 +78,11 @@ def make_dataset(df):
 #data = pd.read_csv("08066500_nldas.txt", delimiter=',', header=0)
 #data = pd.read_csv("08066500.txt", delimiter=',', header=0)
 
-data = pd.read_csv("08066500_chirps.txt", delimiter=',', header=0)
+data = pd.read_csv("08068390.txt", delimiter=',', header=None)
+
+data = data.rename(columns={0: "year", 1: "month", 2: "day", 3: "flow", 4: "PET", 
+                            5: "rain1", 6: "rain2", 7: "rain3", 8: "rain4"})
+
 
 data['date'] = data['year'].astype(str) + \
     data['month'].astype(str).str.zfill(2) + \
@@ -89,7 +98,7 @@ data['daily_rain'] = data['rain1'] + data['rain2'] + data['rain3'] + data['rain4
 
 
 data = data[['PET', 'daily_rain', 'flow']]
-data = data[['flow']] * 35.314666212661
+data[['flow']] = data[['flow']] * 35.314666212661
 
 #data.to_csv('08066500_nldas.csv')
 
@@ -136,7 +145,7 @@ test_df = (test_df - train_mean) / train_std
 
 input_width = 50
 label_width = 1
-shift = 7
+shift = 1
 
 
 X_train, y_train = make_dataset(train_df)
@@ -214,7 +223,7 @@ print('test KGE RF:', KGE(y_pred_rf, y_test), 'baseline KGE:', KGE(y_pred_base, 
 
 
 print(mode)
-print('test MSE LSTM:', MSE(y_pred, y_test), 'baseline MSE:', MSE(y_pred_base, y_test))
+print('test MSE LSTM:', NSE(y_pred, y_test), 'baseline MSE:', NSE(y_pred_base, y_test))
 print('test CORREL LSTM:', CORREL(y_pred, y_test), 'baseline CORREL:', CORREL(y_pred_base, y_test))
 print('test KGE LSTM:', KGE(y_pred, y_test), 'baseline KGE:', KGE(y_pred_base, y_test))
 
